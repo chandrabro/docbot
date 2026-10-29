@@ -50,7 +50,7 @@ npm run dev                  # http://localhost:3000
 ## Limits and notes
 - **File size:** up to 4 MB per upload (Vercel's request limit). For bigger PDFs, split them or paste the text.
 - **Scanned PDFs** (pages that are only images) have no text to extract. Paste the text instead, or run OCR first.
-- **Free limits:** Gemini's free tier has daily request caps that Google can change. Check your quota in AI Studio. If `GEMINI_MODEL` stops working, set another Flash model name there.
+- **Free limits:** Gemini's free tier has daily request caps that Google can change. Check your quota in AI Studio. The app tries several current Flash models automatically. Google retires models often (gemini-2.5-flash is no longer available to new keys), so if answers fail, check https://ai.google.dev/gemini-api/docs/deprecations and set `GEMINI_MODEL` to a current one.
 - **Strict mode:** the quote check can say "I don't know" when the AI paraphrased instead of quoting. Set `STRICT_QUOTE_CHECK=false` to loosen it (less safe against made-up answers).
 - **Privacy:** the document text is sent to Google (and Mistral if used). Do not upload confidential material on free tiers, since free-tier data may be used to improve the providers' products.
 - **Security:** the admin password is checked on the server, the session cookie is signed and expires after 8 hours, and database tables are locked so only the server can read them. Use a long `ADMIN_PASSWORD`.

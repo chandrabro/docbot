@@ -2,7 +2,14 @@
 
 export type LlmAnswer = { found: boolean; answer: string; quote: string };
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+// Google retires models often. We try your chosen model first, then these, in order.
+// (Checked against Google's deprecation page, Oct 2026.)
+const GEMINI_MODELS = [
+  process.env.GEMINI_MODEL,
+  "gemini-3.5-flash-lite",
+  "gemini-3.8-flash",
+  "gemini-3.6-flash",
+].filter((m, i, a): m is string => !!m && a.indexOf(m) === i);
 const MISTRAL_MODEL = process.env.MISTRAL_MODEL || "mistral-small-latest";
 
 const SYSTEM_RULES = `You answer questions using ONLY the text inside <documents>...</documents>.
@@ -27,11 +34,19 @@ function parse(text: string): LlmAnswer {
   };
 }
 
-async function askGemini(context: string, question: string): Promise<LlmAnswer> {
+class LlmError extends Error {
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function askGeminiModel(model: string, context: string, question: string): Promise<LlmAnswer> {
   const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY not set");
+  if (!key) throw new LlmError("GEMINI_API_KEY is not set in Vercel");
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -39,7 +54,6 @@ async function askGemini(context: string, question: string): Promise<LlmAnswer> 
         systemInstruction: { parts: [{ text: SYSTEM_RULES }] },
         contents: [{ role: "user", parts: [{ text: buildUserPrompt(context, question) }] }],
         generationConfig: {
-          temperature: 0,
           responseMimeType: "application/json",
           responseSchema: {
             type: "OBJECT",
@@ -55,9 +69,11 @@ async function askGemini(context: string, question: string): Promise<LlmAnswer> 
     }
   );
   if (!res.ok) {
-    const err = new Error(`Gemini ${res.status}`) as Error & { status?: number };
-    err.status = res.status;
-    throw err;
+    let detail = "";
+    try {
+      detail = (await res.json())?.error?.message || "";
+    } catch {}
+    throw new LlmError(`Gemini ${res.status} (${model}): ${detail.slice(0, 200)}`, res.status);
   }
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || "").join("") ?? "";
@@ -80,9 +96,25 @@ async function askMistral(context: string, question: string): Promise<LlmAnswer>
       ],
     }),
   });
-  if (!res.ok) throw new Error(`Mistral ${res.status}`);
+  if (!res.ok) throw new LlmError(`Mistral ${res.status}`, res.status);
   const data = await res.json();
   return parse(data?.choices?.[0]?.message?.content ?? "");
+}
+
+async function askGemini(context: string, question: string): Promise<LlmAnswer> {
+  let last: unknown;
+  for (const model of GEMINI_MODELS) {
+    try {
+      return await askGeminiModel(model, context, question);
+    } catch (e) {
+      last = e;
+      const status = (e as LlmError).status;
+      // Model missing / retired / not allowed for this key: try the next model.
+      // Anything else (bad key, rate limit, outage): stop and let the caller handle it.
+      if (status !== 404 && status !== 400 && status !== 403) break;
+    }
+  }
+  throw last;
 }
 
 export async function askLlm(context: string, question: string): Promise<LlmAnswer> {

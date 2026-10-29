@@ -89,6 +89,9 @@ export async function POST(req: NextRequest) {
         { status: 503 }
       );
     }
-    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+    const msg = e instanceof Error ? e.message : "";
+    // Safe to show: contains only the provider's error text, never your keys.
+    const detail = /^(Gemini|Mistral|GEMINI_API_KEY|Missing SUPABASE)/.test(msg) ? ` (${msg})` : "";
+    return NextResponse.json({ error: "Something went wrong. Please try again." + detail }, { status: 500 });
   }
 }
