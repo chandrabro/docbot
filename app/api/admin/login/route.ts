@@ -8,12 +8,20 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const password = typeof body?.password === "string" ? body.password : "";
-  if (!checkPassword(password)) {
-    await new Promise((r) => setTimeout(r, 1000)); // slow down guessing
-    return NextResponse.json({ error: "Wrong password" }, { status: 401 });
+  try {
+    if (!checkPassword(password)) {
+      await new Promise((r) => setTimeout(r, 1000)); // slow down guessing
+      return NextResponse.json({ error: "Wrong password" }, { status: 401 });
+    }
+    await startSession();
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    // Misconfiguration (missing ADMIN_PASSWORD or SESSION_SECRET too short)
+    return NextResponse.json(
+      { error: "Server setup problem: " + (e instanceof Error ? e.message : "unknown") },
+      { status: 500 }
+    );
   }
-  await startSession();
-  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE() {

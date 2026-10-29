@@ -41,7 +41,10 @@ export default function Admin() {
       setAuthed(true);
       setPassword("");
       loadDocs();
-    } else setLoginErr("Wrong password");
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setLoginErr(res.status === 401 ? "Wrong password" : d.error || "Server error. Check your Vercel environment variables.");
+    }
   }
 
   async function logout() {
@@ -60,6 +63,12 @@ export default function Admin() {
     const res = await fetch("/api/admin/docs", { method: "POST", body: form });
     const data = await res.json().catch(() => ({}));
     setBusy(false);
+    if (!res.ok && !data.error) {
+      data.error =
+        res.status === 413
+          ? "File is too large for Vercel (limit about 4.5 MB). Use a smaller PDF or paste the text."
+          : `Upload failed (server returned ${res.status}). Check Vercel -> Logs for details.`;
+    }
     if (res.ok) {
       setMsg({ ok: true, text: `Saved (${data.chars.toLocaleString()} characters).` });
       setTitle(""); setText(""); setFile(null);
