@@ -1,0 +1,36 @@
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --text: #1c1b18; --muted: #6b675e;
+  --line: #e2dfd6; --accent: #1f5f4a; --accent-text: #ffffff; --danger: #a63a2b; --soft: #eef3f0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14130f; --card: #1d1c17; --text: #f1efe8; --muted: #a09b8f;
+    --line: #34322a; --accent: #5fb596; --accent-text: #0f1a15; --danger: #e5877a; --soft: #232a26;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 1.5rem; margin: 8px 0 4px; }
+.sub { color: var(--muted); margin: 0 0 20px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.msg-q { font-weight: 600; margin: 0 0 8px; }
+.msg-a { margin: 0; white-space: pre-wrap; }
+.src { margin-top: 10px; padding: 8px 12px; background: var(--soft); border-left: 3px solid var(--accent); border-radius: 4px; font-size: .9rem; color: var(--muted); }
+.err { color: var(--danger); }
+form.ask { display: flex; gap: 8px; margin-top: 16px; }
+input, textarea, button { font: inherit; }
+input[type=text], input[type=password], textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text);
+}
+textarea { min-height: 140px; resize: vertical; }
+button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+button.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); padding: 6px 10px; }
+label { display: block; font-weight: 600; margin: 12px 0 4px; font-size: .9rem; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.meta { color: var(--muted); font-size: .85rem; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.ok { color: var(--accent); }
